@@ -72,7 +72,7 @@ const planete3 = new Planete({
     mass:5000,
 });
 
-const listOfPlanetes = [soleil, planete2, planete1, planete3]; 
+let listOfPlanetes = [soleil, planete2, planete1, planete3]; 
 
 const solarSystem = new Object3D();
 scene.add(solarSystem);
@@ -150,12 +150,16 @@ function animate() {
     
 	requestAnimationFrame( animate );
 
-    const speedAnimationMultiplicator = 10
+    const speedAnimationMultiplicator = 2
+
     for (let i = 0; i<speedAnimationMultiplicator; i++) {
-        
-        updatePlanetesPosition(listOfPlanetes)
+    
+        const planeteToKeep = updatePlanetesPosition(listOfPlanetes);
+        if (planeteToKeep !== null) {
+            listOfPlanetes = planeteToKeep;
+        }
     }
-    // updatePlanetesPosition(listOfPlanetes)
+
     onWindowResize();
     controls.update();
     renderer.render( scene, camera);
@@ -171,9 +175,30 @@ function onWindowResize() {
 }
 
 function updatePlanetesPosition(listOfPlanetes) {
+
+    let needToRemovePlanetes = false
+
     for (const planete of listOfPlanetes) {
         planete.updatePosition(listOfPlanetes);
+        needToRemovePlanetes = needToRemovePlanetes || planete.mustBeDestroyed;
     }
+
+    let planeteToKeep = null;
+
+    if (needToRemovePlanetes) {
+        
+        planeteToKeep = []
+        for (const planete of listOfPlanetes) {
+            if (planete.mustBeDestroyed) {
+                planete.destroy(scene.children[2]);
+            }
+            else {
+                planeteToKeep.push(planete)
+            }
+        }
+    }
+
+    return planeteToKeep;
 }
 
 animate();

@@ -18,7 +18,6 @@ export default class Planete {
 
         // physical attributes
         this.radius = param.radius || 5;
-        this.g = param.g || 10;
         this.mass = param.mass || 50;
         const v0 = param.v0 || [0, 0, 0];
         this.speed = new Vector3( v0[0], v0[1], v0[2]);
@@ -28,7 +27,9 @@ export default class Planete {
         this.material = new MeshStandardMaterial( this.materialValues );
         this.mesh = new Mesh(this.geometry, this.material);
 
-        this.rate = 0.025
+        this.rate = 0.025;
+        //flag in case the planete should be destroyed because of a collision
+        this.mustBeDestroyed = false;
     }
 
     getMesh() {
@@ -104,8 +105,12 @@ export default class Planete {
             const forceVector = new Vector3().subVectors(planetePositon, actualPosition);
             const distanceBtwn = forceVector.length();
 
-            //if distanceBtwn == 0, we are currently calculating distance between the planet and itself
-            if (distanceBtwn > 0) {
+            if (Object.is(this, planete)) {
+                continue;
+            }
+
+            // this.radius + planete.radius is the distance where the two collide
+            if (distanceBtwn > (this.radius + planete.radius)) {
                 
                 //avoid d to get close to 0 and that the force go to infinity
                 const d = (distanceBtwn < this.radius) ? this.radius : distanceBtwn;
@@ -117,6 +122,13 @@ export default class Planete {
                 forceVector.multiplyScalar(normForce);
 
                 totalForce.add( forceVector );
+            }
+
+            //Collision, if the planete has smaller mass, the planet is destroyed
+            if (distanceBtwn <= (this.radius + planete.radius)) {
+                if (this.mass < planete.mass) {
+                    this.mustBeDestroyed = true;
+                }
             }
 
         }
@@ -144,6 +156,12 @@ export default class Planete {
             this.translate(tx, ty, tz);
             this.setSpeed(vx_next, vy_next, vz_next);
         }
+    }
+
+    destroy(parent) {
+        this.material.dispose();
+        this.geometry.dispose();
+        parent.remove(this.mesh);
     }
 
 }
